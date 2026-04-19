@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>一番賞 · 管理系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=JetBrains+Mono:wght@400;700&family=Shippori+Mincho:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1614;
+    --paper: #f5efe4;
+    --paper-2: #ebe3d3;
+    --red: #c0392b;
+    --red-deep: #8b1e14;
+    --gold: #b8935a;
+    --green: #3d5a3d;
+    --muted: #7a6f62;
+    --line: #d4c9b4;
+    --shadow: 0 2px 0 rgba(26,22,20,0.08), 0 8px 24px rgba(26,22,20,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--paper); color: var(--ink);
+    font-family: "Noto Serif TC", serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(192,57,43,0.04), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(184,147,90,0.06), transparent 40%),
+      repeating-linear-gradient(0deg, transparent 0 2px, rgba(26,22,20,0.015) 2px 3px);
+  }
+  .app { max-width: 720px; margin: 0 auto; padding: 20px 18px 120px; }
+  .head { text-align: center; padding: 20px 8px 18px; position: relative; }
+  .head::before, .head::after {
+    content: ""; position: absolute; left: 50%;
+    transform: translateX(-50%); width: 60px; height: 2px; background: var(--red);
+  }
+  .head::before { top: 8px; } .head::after { bottom: 4px; }
+  .head .kanji {
+    font-family: "Shippori Mincho", "Noto Serif TC", serif;
+    font-weight: 900; font-size: 38px; letter-spacing: 8px;
+    color: var(--red-deep); margin-bottom: 4px; text-indent: 8px;
+  }
+  .head .sub { font-size: 11px; letter-spacing: 6px; color: var(--muted); text-indent: 6px; }
+  .mode-badge {
+    position: absolute; top: 14px; right: 12px;
+    font-size: 10px; letter-spacing: 3px; padding: 4px 10px;
+    border: 1px solid var(--line); color: var(--muted); cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .mode-badge.admin {
+    border-color: var(--red); color: var(--red); background: rgba(192,57,43,0.06);
+  }
+  .tabs {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    margin-bottom: 18px; border: 1.5px solid var(--ink); background: var(--paper);
+  }
+  .tabs.tabs-4 { grid-template-columns: repeat(4, 1fr); }
+  .tab {
+    padding: 13px 4px; text-align: center; font-size: 13px; font-weight: 600;
+    letter-spacing: 1px; cursor: pointer; border-right: 1px solid var(--ink);
+    background: var(--paper); color: var(--ink);
+    transition: all .18s ease; user-select: none;
+  }
+  .tabs.tabs-4 .tab { font-size: 12px; letter-spacing: 0px; padding: 13px 2px; }
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--ink); color: var(--paper); }
+  .tab .num {
+    font-family: "JetBrains Mono", monospace; font-size: 9px;
+    display: block; margin-bottom: 2px; opacity: .6;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .3s ease; }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card {
+    background: var(--paper); border: 1.5px solid var(--ink);
+    padding: 18px 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+    position: relative;
+  }
+  .card-title {
+    font-weight: 900; font-size: 14px; letter-spacing: 3px;
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 1px dashed var(--line);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before { content: "◆"; color: var(--red); font-size: 10px; }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; letter-spacing: 1px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 11px 12px;
+    border: 1px solid var(--line); background: #fff;
+    font-family: "JetBrains Mono", "Noto Serif TC", monospace;
+    font-size: 15px; color: var(--ink); border-radius: 0;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .btn {
+    width: 100%; padding: 13px;
+    border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper);
+    font-family: "Noto Serif TC", serif; font-weight: 700;
+    font-size: 14px; letter-spacing: 4px;
+    cursor: pointer; transition: all .15s; text-indent: 4px;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.red { background: var(--red); border-color: var(--red); }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn.small { padding: 9px 12px; font-size: 12px; letter-spacing: 2px; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .scan-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 18px; border: 2px dashed var(--ink); background: var(--paper-2);
+    cursor: pointer; margin-bottom: 12px;
+    font-weight: 700; letter-spacing: 2px;
+  }
+  .scan-btn svg { width: 22px; height: 22px; }
+  #reader { width: 100%; margin-top: 10px; }
+  #reader video { border: 1.5px solid var(--ink); }
+  .current-prize {
+    padding: 16px; background: var(--ink); color: var(--paper);
+    text-align: center; margin-bottom: 14px; position: relative;
+  }
+  .current-prize .cp-label {
+    font-size: 10px; letter-spacing: 4px; color: var(--gold); margin-bottom: 4px;
+  }
+  .current-prize .cp-name { font-size: 18px; font-weight: 900; letter-spacing: 2px; }
+  .current-prize .cp-code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; color: var(--gold); margin-top: 3px; opacity: .8;
+  }
+  .current-prize .cp-remain {
+    margin-top: 8px; font-size: 11px; letter-spacing: 2px;
+    padding-top: 8px; border-top: 1px dashed rgba(245,239,228,0.2);
+  }
+  .current-prize .cp-remain .mono {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--gold); font-weight: 700; font-size: 14px;
+  }
+  .settle-box {
+    background: var(--paper-2); border: 1.5px solid var(--ink);
+    padding: 16px; margin-top: 14px;
+  }
+  .settle-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 14px;
+  }
+  .settle-row:last-of-type { border-bottom: none; }
+  .settle-row .k { color: var(--muted); letter-spacing: 1px; }
+  .settle-row .v { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  .settle-total {
+    margin-top: 12px; padding: 14px 12px;
+    background: var(--ink); color: var(--paper);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .settle-total .k { font-weight: 900; letter-spacing: 3px; font-size: 13px; }
+  .settle-total .v {
+    font-family: "JetBrains Mono", monospace; font-size: 24px;
+    font-weight: 700; color: var(--gold);
+  }
+  .settle-total .v small { font-size: 14px; opacity: .7; margin-right: 2px;}
+  .record {
+    border: 1.5px solid var(--ink); padding: 12px;
+    margin-bottom: 10px; background: var(--paper);
+  }
+  .record-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .record-name { font-weight: 900; font-size: 15px; letter-spacing: 1px; }
+  .record-code {
+    font-family: "JetBrains Mono", monospace; font-size: 10px;
+    color: var(--muted); margin-top: 2px;
+  }
+  .record-date { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); }
+  .record-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 6px; font-size: 11px; margin-top: 8px;
+  }
+  .record-stat {
+    text-align: center; padding: 6px 4px;
+    background: var(--paper-2); border: 1px solid var(--line);
+  }
+  .record-stat .sk { color: var(--muted); display: block; font-size: 10px; margin-bottom: 2px; }
+  .record-stat .sv { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  .record-actions {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;
+  }
+  .result {
+    background: linear-gradient(135deg, #2a221d 0%, #1a1614 100%);
+    color: var(--paper); padding: 18px 14px; margin-top: 14px;
+    border: 1.5px solid var(--ink); position: relative; overflow: hidden;
+  }
+  .result::before {
+    content: ""; position: absolute; top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(184,147,90,0.25), transparent 70%);
+    pointer-events: none;
+  }
+  .result-title {
+    font-size: 11px; letter-spacing: 5px; color: var(--gold);
+    margin-bottom: 12px; text-indent: 5px;
+  }
+  .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .price-cell {
+    border: 1px solid rgba(245,239,228,0.2); padding: 12px 4px; text-align: center;
+  }
+  .price-cell .label {
+    font-size: 11px; color: var(--gold); letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .price-cell .amt {
+    font-family: "JetBrains Mono", monospace; font-size: 20px;
+    font-weight: 700; color: var(--paper);
+  }
+  .price-cell .per {
+    font-size: 10px; color: var(--muted); margin-top: 3px;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .price-cell.best { border-color: var(--gold); background: rgba(184,147,90,0.08); }
+  .result-meta {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px dashed rgba(245,239,228,0.2);
+    font-size: 11px; color: var(--gold);
+    display: flex; justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--muted); font-size: 13px; letter-spacing: 2px;
+  }
+  .empty::before {
+    content: "空"; display: block; font-size: 48px;
+    font-family: "Shippori Mincho", serif;
+    color: var(--line); margin-bottom: 12px;
+  }
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(26,22,20,0.75);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--paper); border: 2px solid var(--ink);
+    max-width: 400px; width: 100%; padding: 22px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { font-size: 15px; letter-spacing: 3px; margin-bottom: 14px; text-align: center; }
+  .pin-input {
+    font-family: "JetBrains Mono", monospace; font-size: 22px;
+    text-align: center; letter-spacing: 12px; padding: 14px !important;
+  }
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--ink); color: var(--paper);
+    padding: 12px 24px; font-size: 13px; letter-spacing: 2px;
+    border: 1px solid var(--gold);
+    z-index: 200; transition: transform .3s; pointer-events: none;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: var(--red); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .mono { font-family: "JetBrains Mono", monospace; }
+  .admin-only { display: none; }
+  body.is-admin .admin-only { display: block; }
+  .sync-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; letter-spacing: 2px;
+    padding: 3px 8px; border: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace;
+  }
+  .sync-status.ok { color: var(--green); border-color: var(--green); }
+  .sync-status.fail { color: var(--red); border-color: var(--red); }
+  .sync-status.wait { color: var(--muted); }
+  .link-text { color: var(--red); text-decoration: underline; font-size: 12px; word-break: break-all; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-box {
+    border: 1.5px solid var(--ink); padding: 14px 12px; background: var(--paper);
+  }
+  .stat-box .sl {
+    font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 6px;
+  }
+  .stat-box .sv { font-family: "JetBrains Mono", monospace; font-size: 22px; font-weight: 700; }
+  .stat-box.accent { background: var(--ink); color: var(--paper); }
+  .stat-box.accent .sl { color: var(--gold); }
+  .stat-box.accent .sv { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="head">
+    <div class="kanji">一番賞</div>
+    <div class="sub">ICHIBAN · 管理系統</div>
+    <div class="mode-badge" id="mode-badge">員工模式</div>
+  </header>
+
+  <nav class="tabs tabs-4" id="staff-tabs">
+    <div class="tab active" data-tab="scan"><span class="num">01</span>掃碼結算</div>
+    <div class="tab" data-tab="settle"><span class="num">02</span>結算紀錄</div>
+    <div class="tab" data-tab="remain"><span class="num">03</span>剩餘抽數</div>
+    <div class="tab" data-tab="commission"><span class="num">04</span>我的業績</div>
+  </nav>
+
+  <nav class="tabs admin-only" id="admin-tabs" style="display:none;">
+    <div class="tab active" data-tab="price"><span class="num">01</span>商品管理</div>
+    <div class="tab" data-tab="report"><span class="num">02</span>營運報表</div>
+    <div class="tab" data-tab="config"><span class="num">03</span>系統設定</div>
+  </nav>
+
+  <!-- 員工:掃碼結算 -->
+  <section class="panel active" id="panel-scan">
+    <div class="card">
+      <div class="card-title">選擇商品</div>
+      <div class="scan-btn" id="btn-scan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <path d="M14 14h3v3h-3zM18 14h3M14 18h3M18 18v3M21 18v3"/>
+        </svg>
+        <span>掃 描 條 碼</span>
+      </div>
+      <div id="reader" style="display:none;"></div>
+      <div class="field">
+        <label>或手動輸入編號</label>
+        <input type="text" id="manual-code" placeholder="例:A001" />
+      </div>
+      <button class="btn ghost small" id="btn-manual">確 認 編 號</button>
+      <div id="current-prize" style="display:none;margin-top:14px;"></div>
+    </div>
+
+    <div class="card" id="settle-card" style="display:none;">
+      <div class="card-title">客人結算</div>
+      <div class="row3">
+        <div class="field">
+          <label>抽獎數</label>
+          <input type="number" id="s-draw" placeholder="5" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>中獎商品</label>
+          <input type="number" id="s-win" value="0" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>小賞數</label>
+          <input type="number" id="s-small" value="0" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="hint">
+        ※ 若客人沒中到商品,每張未中獎單=小賞1個,每個小賞可折抵 $30<br/>
+        ※ 有中獎就不算小賞折抵
+      </div>
+      <button class="btn red" id="btn-settle" style="margin-top:12px;">計 算 結 帳</button>
+
+      <div class="settle-box" id="settle-result" style="display:none;">
+        <div class="settle-row"><span class="k">抽獎方案</span><span class="v" id="s-plan">—</span></div>
+        <div class="settle-row"><span class="k">抽獎費用</span><span class="v mono">$<span id="s-base">0</span></span></div>
+        <div class="settle-row"><span class="k">中獎商品</span><span class="v mono"><span id="s-win-n">0</span> 個</span></div>
+        <div class="settle-row"><span class="k">小賞數</span><span class="v mono"><span id="s-small-n">0</span> 個</span></div>
+        <div class="settle-row"><span class="k">小賞折抵</span><span class="v mono" style="color:var(--red);">− $<span id="s-discount">0</span></span></div>
+        <div class="settle-total">
+          <span class="k">應收金額</span>
+          <span class="v"><small>$</small><span id="s-final">0</span></span>
+        </div>
+        <div class="commission-row" id="commission-row" style="margin-top:10px;padding:10px 12px;border:1px dashed var(--gold);background:rgba(184,147,90,0.08);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;letter-spacing:2px;color:var(--green);">本筆業績抽成</span>
+          <span class="mono" style="font-weight:700;color:var(--green);font-size:16px;">+$<span id="s-commission">0</span></span>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <span class="sync-status wait" id="sync-status">⋯ 待確認送出</span>
+          <button class="btn red small" id="btn-confirm" style="width:auto;padding:8px 20px;">確 認 送 出</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 員工:結算紀錄 -->
+  <section class="panel" id="panel-settle">
+    <div class="card">
+      <div class="card-title">本機結算紀錄</div>
+      <div class="hint" style="margin-bottom:12px;">※ 此為本機暫存,資料會自動同步到 Google 試算表</div>
+      <div id="settle-list"><div class="empty">尚無紀錄</div></div>
+    </div>
+  </section>
+
+  <!-- 員工:剩餘抽數 -->
+  <section class="panel" id="panel-remain">
+    <div class="card">
+      <div class="card-title">各商品剩餘抽數</div>
+      <div id="remain-list"><div class="empty">尚無商品</div></div>
+    </div>
+  </section>
+
+  <!-- 員工:我的業績 -->
+  <section class="panel" id="panel-commission">
+    <div class="card">
+      <div class="card-title">業績抽成</div>
+      <div class="stats-grid">
+        <div class="stat-box accent">
+          <div class="sl">今日抽成</div>
+          <div class="sv">$<span id="cm-today">0</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="sl">今日抽數</div>
+          <div class="sv" id="cm-today-draws">0</div>
+        </div>
+        <div class="stat-box accent">
+          <div class="sl">本月抽成</div>
+          <div class="sv">$<span id="cm-month">0</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="sl">本月抽數</div>
+          <div class="sv" id="cm-month-draws">0</div>
+        </div>
+      </div>
+      <div class="settle-row" style="padding:10px 0;border-top:1px solid var(--line);">
+        <span class="k">累計總抽成</span>
+        <span class="v mono" style="color:var(--green);font-size:16px;">$<span id="cm-total">0</span></span>
+      </div>
+      <div class="settle-row" style="padding:10px 0;">
+        <span class="k">當前抽成費率</span>
+        <span class="v mono">$<span id="cm-rate">5</span> / 抽</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">每日明細</div>
+      <div id="cm-daily"><div class="empty">尚無紀錄</div></div>
+    </div>
+  </section>
+
+  <!-- 老闆:商品管理 -->
+  <section class="panel admin-only" id="panel-price">
+    <div class="card">
+      <div class="card-title">新增 / 編輯商品</div>
+      <div class="row2">
+        <div class="field">
+          <label>商品編號(條碼)</label>
+          <input type="text" id="p-code" placeholder="A001" />
+        </div>
+        <div class="field">
+          <label>商品名稱</label>
+          <input type="text" id="p-name" placeholder="鬼滅一番賞" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>獎品總成本 ($)</label>
+          <input type="number" id="p-cost" placeholder="3000" inputmode="decimal" />
+        </div>
+        <div class="field">
+          <label>總抽數</label>
+          <input type="number" id="p-total" placeholder="80" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="field">
+        <label>成本倍率(建議 3 倍)</label>
+        <input type="number" id="p-mult" value="3" step="0.1" inputmode="decimal" />
+      </div>
+      <div class="row3">
+        <div class="field"><label>1 抽加成</label>
+          <input type="number" id="p-r1" value="1.15" step="0.01" inputmode="decimal" /></div>
+        <div class="field"><label>3 抽係數</label>
+          <input type="number" id="p-r3" value="1.00" step="0.01" inputmode="decimal" /></div>
+        <div class="field"><label>5 抽折扣</label>
+          <input type="number" id="p-r5" value="0.92" step="0.01" inputmode="decimal" /></div>
+      </div>
+      <button class="btn red" id="btn-calc">計 算 定 價</button>
+
+      <div class="result" id="result" style="display:none;">
+        <div class="result-title">SUGGESTED PRICING</div>
+        <div class="price-grid">
+          <div class="price-cell"><div class="label">1 抽</div><div class="amt">$<span id="r-p1">0</span></div><div class="per" id="r-per1">—</div></div>
+          <div class="price-cell"><div class="label">3 抽</div><div class="amt">$<span id="r-p3">0</span></div><div class="per" id="r-per3">—</div></div>
+          <div class="price-cell best"><div class="label">5 抽 ★</div><div class="amt">$<span id="r-p5">0</span></div><div class="per" id="r-per5">—</div></div>
+        </div>
+        <div class="result-meta">
+          <span>目標營收 $<span id="r-target">0</span></span>
+          <span>毛利 $<span id="r-profit">0</span></span>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn ghost" id="btn-save">儲 存 商 品</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">商品清單</div>
+      <div id="prize-list"><div class="empty">尚無商品</div></div>
+    </div>
+  </section>
+
+  <!-- 老闆:報表 -->
+  <section class="panel admin-only" id="panel-report">
+    <div class="card">
+      <div class="card-title">整體營運</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="sl">總結算次數</div><div class="sv" id="stat-count">0</div></div>
+        <div class="stat-box"><div class="sl">總抽獎數</div><div class="sv" id="stat-draws">0</div></div>
+        <div class="stat-box accent"><div class="sl">總營收</div><div class="sv">$<span id="stat-revenue">0</span></div></div>
+        <div class="stat-box"><div class="sl">中獎次數</div><div class="sv" id="stat-wins">0</div></div>
+        <div class="stat-box" style="grid-column:span 2;border-color:var(--gold);">
+          <div class="sl" style="color:var(--gold);">員工累計抽成支出</div>
+          <div class="sv" style="color:var(--gold);">$<span id="stat-commission">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">各商品明細</div>
+      <div id="report-list"><div class="empty">尚無紀錄</div></div>
+    </div>
+  </section>
+
+  <!-- 老闆:設定 -->
+  <section class="panel admin-only" id="panel-config">
+    <div class="card">
+      <div class="card-title">管理員密碼</div>
+      <div class="field">
+        <label>修改密碼(留空不變)</label>
+        <input type="password" id="cfg-pin" placeholder="4-8 位數密碼" />
+      </div>
+      <button class="btn ghost small" id="btn-save-pin">更 新 密 碼</button>
+      <div class="hint" style="margin-top:8px;">
+        預設密碼:<span class="mono">1234</span>,首次使用請先修改
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">員工業績抽成</div>
+      <div class="field">
+        <label>每抽抽成金額 ($)</label>
+        <input type="number" id="cfg-commission" placeholder="5" inputmode="decimal" step="0.5" />
+      </div>
+      <button class="btn ghost small" id="btn-save-commission">儲 存 費 率</button>
+      <div class="hint" style="margin-top:8px;">
+        預設 $5/抽,員工結算時會依此計算抽成金額並在「我的業績」頁顯示
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Google 試算表連結</div>
+      <div class="field">
+        <label>Apps Script Web App URL</label>
+        <input type="text" id="cfg-webhook" placeholder="https://script.google.com/macros/s/.../exec" />
+        <div class="hint">
+          需要先在 Google Apps Script 建立 Web App,將網址貼到這裡。<br/>
+          每次結算完成會自動寫入一筆紀錄到試算表。
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost small" id="btn-save-webhook">儲 存 設 定</button>
+        <button class="btn small" id="btn-test-webhook">測 試 連 線</button>
+      </div>
+      <div id="webhook-status" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Apps Script 設定教學</div>
+      <div class="hint" style="line-height:1.8;">
+        1. 開啟 Google 試算表,選單「擴充功能 → Apps Script」<br/>
+        2. 將<a href="#" id="show-script" class="link-text">此範本程式碼</a>貼到編輯器並儲存<br/>
+        3. 點「部署 → 新增部署作業 → 類型:Web 應用程式」<br/>
+        4. 執行身分選「我」,存取權選「任何人」<br/>
+        5. 複製部署後的網址貼到上方欄位並儲存
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">資料管理</div>
+      <button class="btn small" id="btn-export" style="background:var(--green);border-color:var(--green);margin-bottom:8px;">
+        匯 出 所 有 資 料
+      </button>
+      <button class="btn ghost small" id="btn-import">匯 入 資 料</button>
+      <input type="file" id="import-file" accept=".json" style="display:none;" />
+      <div class="hint" style="margin-top:8px;">定期匯出備份資料,以防本機資料遺失</div>
+    </div>
+
+    <button class="btn ghost" id="btn-logout" style="margin-top:10px;">退 出 管 理 員 模 式</button>
+  </section>
+
+</div>
+
+<!-- PIN Modal -->
+<div class="modal-bg" id="pin-modal">
+  <div class="modal">
+    <h3>管 理 員 登 入</h3>
+    <div class="field">
+      <label>請輸入密碼</label>
+      <input type="password" id="pin-input" class="pin-input" maxlength="8" inputmode="numeric" />
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost small" id="pin-cancel">取 消</button>
+      <button class="btn red small" id="pin-confirm">確 認</button>
+    </div>
+  </div>
+</div>
+
+<!-- Script Template Modal -->
+<div class="modal-bg" id="script-modal">
+  <div class="modal" style="max-width:560px;">
+    <h3>Apps Script 範本</h3>
+    <textarea id="script-text" readonly style="width:100%;height:300px;font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px;border:1px solid var(--line);background:#fff;"></textarea>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn ghost small" id="script-close">關 閉</button>
+      <button class="btn red small" id="script-copy">複 製 程 式 碼</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">已儲存</div>
+
+<script>
+const K_PRIZES = 'ichiban:prizes';
+const K_SETTLES = 'ichiban:settles';
+const K_PIN = 'ichiban:pin';
+const K_WEBHOOK = 'ichiban:webhook';
+const K_COMMISSION = 'ichiban:commission';
+
+let prizes = [];
+let settles = [];
+let currentPrize = null;
+let pendingSettle = null;
+let pendingPrize = null;
+let scanner = null;
+
+const $ = id => document.getElementById(id);
+const toMoney = n => Math.round(n).toLocaleString();
+const roundPrice = n => Math.round(n / 10) * 10;
+
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function load(key, def) {
+  try {
+    const r = await window.storage.get(key);
+    if (!r) return def;
+    return JSON.parse(r.value);
+  } catch { return def; }
+}
+async function save(key, val) {
+  try { await window.storage.set(key, JSON.stringify(val)); }
+  catch (e) { console.error(e); }
+}
+
+const APPS_SCRIPT_TEMPLATE = `// === 一番賞自動記錄 Apps Script ===
+// 貼到 Google 試算表的 Apps Script 編輯器,部署成 Web App 即可
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        '時間', '商品編號', '商品名稱', '抽獎數', '中獎商品數',
+        '小賞數', '抽獎方案', '抽獎費用', '小賞折抵', '應收金額',
+        '抽成費率', '業績抽成'
+      ]);
+    }
+
+    sheet.appendRow([
+      new Date(data.timestamp),
+      data.prizeCode || '',
+      data.prizeName || '',
+      data.draws || 0,
+      data.wins || 0,
+      data.smalls || 0,
+      data.plan || '',
+      data.baseCost || 0,
+      data.discount || 0,
+      data.finalCost || 0,
+      data.commissionRate || 0,
+      data.commission || 0
+    ]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok', message: 'ichiban webhook alive' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+function bindTabs(containerId) {
+  document.querySelectorAll(`#${containerId} .tab`).forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll(`#${containerId} .tab`).forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      $('panel-' + t.dataset.tab).classList.add('active');
+      if (t.dataset.tab === 'settle') renderSettleList();
+      if (t.dataset.tab === 'remain') renderRemain();
+      if (t.dataset.tab === 'commission') renderCommission();
+      if (t.dataset.tab === 'report') renderReport();
+    });
+  });
+}
+bindTabs('staff-tabs');
+bindTabs('admin-tabs');
+
+$('mode-badge').addEventListener('click', () => {
+  if (document.body.classList.contains('is-admin')) return;
+  openPinModal();
+});
+
+function openPinModal() {
+  $('pin-input').value = '';
+  $('pin-modal').classList.add('show');
+  setTimeout(() => $('pin-input').focus(), 100);
+}
+
+$('pin-cancel').addEventListener('click', () => $('pin-modal').classList.remove('show'));
+$('pin-confirm').addEventListener('click', async () => {
+  const input = $('pin-input').value.trim();
+  const stored = await load(K_PIN, '1234');
+  if (input === stored) {
+    document.body.classList.add('is-admin');
+    $('staff-tabs').style.display = 'none';
+    $('admin-tabs').style.display = 'grid';
+    $('mode-badge').textContent = '管理員模式';
+    $('mode-badge').classList.add('admin');
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('#admin-tabs .tab').forEach((x, i) => x.classList.toggle('active', i === 0));
+    $('panel-price').classList.add('active');
+    $('pin-modal').classList.remove('show');
+    renderPrizeList();
+    loadConfig();
+    toast('已進入管理員模式');
+  } else {
+    toast('密碼錯誤', true);
+    $('pin-input').value = '';
+  }
+});
+$('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('pin-confirm').click();
+});
+
+$('btn-logout').addEventListener('click', () => {
+  document.body.classList.remove('is-admin');
+  $('staff-tabs').style.display = 'grid';
+  $('admin-tabs').style.display = 'none';
+  $('mode-badge').textContent = '員工模式';
+  $('mode-badge').classList.remove('admin');
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('#staff-tabs .tab').forEach((x, i) => x.classList.toggle('active', i === 0));
+  $('panel-scan').classList.add('active');
+  toast('已退出管理員');
+});
+
+/* 掃碼 */
+$('btn-scan').addEventListener('click', async () => {
+  const reader = $('reader');
+  if (reader.style.display === 'block') { stopScanner(); return; }
+  reader.style.display = 'block';
+  try {
+    scanner = new Html5Qrcode('reader');
+    await scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 240, height: 160 } },
+      (decoded) => { lookupByCode(decoded); stopScanner(); },
+      () => {}
+    );
+  } catch (e) {
+    toast('無法開啟相機,請改用手動輸入', true);
+    reader.style.display = 'none';
+    console.error(e);
+  }
+});
+
+function stopScanner() {
+  if (scanner) {
+    scanner.stop().then(() => {
+      scanner.clear();
+      $('reader').style.display = 'none';
+      scanner = null;
+    }).catch(() => {
+      $('reader').style.display = 'none';
+      scanner = null;
+    });
+  } else {
+    $('reader').style.display = 'none';
+  }
+}
+
+$('btn-manual').addEventListener('click', () => {
+  const code = $('manual-code').value.trim();
+  if (!code) { toast('請輸入編號', true); return; }
+  lookupByCode(code);
+});
+$('manual-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('btn-manual').click();
+});
+
+function lookupByCode(code) {
+  const normalized = code.trim().toUpperCase();
+  const prize = prizes.find(p => (p.code || '').toUpperCase() === normalized);
+  if (!prize) { toast('找不到編號:' + code, true); return; }
+  currentPrize = prize;
+  renderCurrentPrize();
+  toast('已選擇:' + prize.name);
+}
+
+function renderCurrentPrize() {
+  const box = $('current-prize');
+  if (!currentPrize) { box.style.display = 'none'; $('settle-card').style.display = 'none'; return; }
+  const used = getUsedDraws(currentPrize.id);
+  const remain = Math.max(0, currentPrize.total - used);
+  box.innerHTML = `
+    <div class="current-prize">
+      <div class="cp-label">CURRENT</div>
+      <div class="cp-name">${currentPrize.name}</div>
+      <div class="cp-code">${currentPrize.code || '—'}</div>
+      <div class="cp-remain">
+        剩餘 <span class="mono">${remain}</span> / ${currentPrize.total} 抽
+      </div>
+    </div>
+  `;
+  box.style.display = 'block';
+  $('settle-card').style.display = 'block';
+  $('settle-result').style.display = 'none';
+  $('s-draw').value = '';
+  $('s-win').value = 0;
+  $('s-small').value = 0;
+}
+
+function getUsedDraws(prizeId) {
+  return settles.filter(s => s.prizeId === prizeId).reduce((a, s) => a + (s.draws || 0), 0);
+}
+
+/* 結算 */
+$('btn-settle').addEventListener('click', async () => {
+  if (!currentPrize) { toast('請先選商品', true); return; }
+  const draws = parseInt($('s-draw').value) || 0;
+  const wins = parseInt($('s-win').value) || 0;
+  const smalls = parseInt($('s-small').value) || 0;
+  if (draws <= 0) { toast('請輸入抽獎數', true); return; }
+
+  let base = 0, plan = '';
+  if (draws >= 5) {
+    const sets5 = Math.floor(draws / 5);
+    const rem = draws - sets5 * 5;
+    let remCost = 0, remPlan = '';
+    if (rem >= 3) { remCost = currentPrize.p3 + (rem - 3) * currentPrize.p1; remPlan = rem === 3 ? '+3抽' : `+3抽+${rem-3}抽`; }
+    else if (rem > 0) { remCost = rem * currentPrize.p1; remPlan = `+${rem}抽`; }
+    base = sets5 * currentPrize.p5 + remCost;
+    plan = `${sets5}×5抽${remPlan}`;
+  } else if (draws >= 3) {
+    const rem = draws - 3;
+    base = currentPrize.p3 + rem * currentPrize.p1;
+    plan = rem > 0 ? `3抽+${rem}抽` : '3抽';
+  } else {
+    base = draws * currentPrize.p1;
+    plan = `${draws}抽`;
+  }
+
+  const discount = (wins > 0) ? 0 : smalls * 30;
+  const final = Math.max(0, base - discount);
+  const rate = await load(K_COMMISSION, 5);
+  const commission = draws * rate;
+
+  $('s-plan').textContent = plan;
+  $('s-base').textContent = toMoney(base);
+  $('s-win-n').textContent = wins;
+  $('s-small-n').textContent = smalls;
+  $('s-discount').textContent = toMoney(discount);
+  $('s-final').textContent = toMoney(final);
+  $('s-commission').textContent = toMoney(commission);
+  $('settle-result').style.display = 'block';
+  $('sync-status').textContent = '⋯ 待確認送出';
+  $('sync-status').className = 'sync-status wait';
+
+  pendingSettle = {
+    id: 's_' + Date.now(),
+    timestamp: Date.now(),
+    prizeId: currentPrize.id,
+    prizeCode: currentPrize.code || '',
+    prizeName: currentPrize.name,
+    draws, wins, smalls,
+    plan, baseCost: base, discount, finalCost: final,
+    commissionRate: rate,
+    commission: commission,
+    synced: false
+  };
+});
+
+$('btn-confirm').addEventListener('click', async () => {
+  if (!pendingSettle) return;
+  settles.unshift(pendingSettle);
+  await save(K_SETTLES, settles);
+  const webhook = await load(K_WEBHOOK, '');
+  if (webhook) {
+    $('sync-status').textContent = '⋯ 同步中';
+    $('sync-status').className = 'sync-status wait';
+    const ok = await syncToSheet(pendingSettle, webhook);
+    if (ok) {
+      const idx = settles.findIndex(s => s.id === pendingSettle.id);
+      if (idx >= 0) settles[idx].synced = true;
+      await save(K_SETTLES, settles);
+      $('sync-status').textContent = '✓ 已同步';
+      $('sync-status').className = 'sync-status ok';
+    } else {
+      $('sync-status').textContent = '✗ 同步失敗(本機已保存)';
+      $('sync-status').className = 'sync-status fail';
+    }
+  } else {
+    $('sync-status').textContent = '✓ 已本機保存';
+    $('sync-status').className = 'sync-status ok';
+  }
+  toast('結算完成');
+  pendingSettle = null;
+  renderCurrentPrize();
+  $('s-draw').value = '';
+  $('s-win').value = 0;
+  $('s-small').value = 0;
+  setTimeout(() => { $('settle-result').style.display = 'none'; }, 2000);
+});
+
+async function syncToSheet(data, webhook) {
+  try {
+    await fetch(webhook, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(data)
+    });
+    return true;
+  } catch (e) {
+    console.error('Sync failed:', e);
+    return false;
+  }
+}
+
+/* 員工:結算紀錄 */
+function renderSettleList() {
+  const box = $('settle-list');
+  if (!settles.length) { box.innerHTML = '<div class="empty">尚無紀錄</div>'; return; }
+  box.innerHTML = settles.slice(0, 50).map(s => {
+    const d = new Date(s.timestamp);
+    const time = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const comm = s.commission || 0;
+    return `
+      <div class="record">
+        <div class="record-head">
+          <div>
+            <div class="record-name">${s.prizeName}</div>
+            <div class="record-code">${s.prizeCode}</div>
+          </div>
+          <div class="record-date">${time} ${s.synced ? '✓' : '⋯'}</div>
+        </div>
+        <div class="record-stats">
+          <div class="record-stat"><span class="sk">抽數</span><span class="sv">${s.draws}</span></div>
+          <div class="record-stat"><span class="sk">中獎</span><span class="sv">${s.wins}</span></div>
+          <div class="record-stat"><span class="sk">小賞</span><span class="sv">${s.smalls}</span></div>
+          <div class="record-stat"><span class="sk">收款</span><span class="sv">$${toMoney(s.finalCost)}</span></div>
+        </div>
+        ${comm > 0 ? `<div style="margin-top:6px;padding:5px 10px;background:rgba(184,147,90,0.1);border:1px dashed var(--gold);font-size:11px;display:flex;justify-content:space-between;"><span style="color:var(--muted);">抽成</span><span class="mono" style="color:var(--green);font-weight:700;">+$${toMoney(comm)}</span></div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+/* 員工:剩餘抽數 */
+function renderRemain() {
+  const box = $('remain-list');
+  if (!prizes.length) { box.innerHTML = '<div class="empty">尚無商品</div>'; return; }
+  box.innerHTML = prizes.map(p => {
+    const used = getUsedDraws(p.id);
+    const remain = Math.max(0, p.total - used);
+    const pct = p.total > 0 ? Math.round((used / p.total) * 100) : 0;
+    return `
+      <div class="record">
+        <div class="record-head">
+          <div>
+            <div class="record-name">${p.name}</div>
+            <div class="record-code">${p.code || '—'}</div>
+          </div>
+          <div class="record-date mono">${remain} / ${p.total}</div>
+        </div>
+        <div style="height:6px;background:var(--paper-2);border:1px solid var(--line);margin-top:8px;">
+          <div style="height:100%;background:${remain === 0 ? 'var(--red)' : 'var(--green)'};width:${pct}%;"></div>
+        </div>
+        <div class="hint" style="margin-top:4px;text-align:right;">已抽 ${used} 抽 · ${pct}%</div>
+      </div>`;
+  }).join('');
+}
+
+/* 老闆:商品管理 */
+$('btn-calc').addEventListener('click', () => {
+  const code = $('p-code').value.trim();
+  const name = $('p-name').value.trim();
+  const cost = parseFloat($('p-cost').value) || 0;
+  const total = parseInt($('p-total').value) || 0;
+  const mult = parseFloat($('p-mult').value) || 3;
+  const r1 = parseFloat($('p-r1').value) || 1.15;
+  const r3 = parseFloat($('p-r3').value) || 1;
+  const r5 = parseFloat($('p-r5').value) || 0.92;
+  if (cost <= 0 || total <= 0) { toast('請輸入成本與抽數', true); return; }
+
+  const target = cost * mult;
+  const basePerDraw = target / total;
+  const p1 = roundPrice(basePerDraw * r1);
+  const p3 = roundPrice(basePerDraw * r3 * 3);
+  const p5 = roundPrice(basePerDraw * r5 * 5);
+
+  $('r-p1').textContent = toMoney(p1);
+  $('r-p3').textContent = toMoney(p3);
+  $('r-p5').textContent = toMoney(p5);
+  $('r-per1').textContent = '$' + toMoney(p1) + ' /抽';
+  $('r-per3').textContent = '$' + toMoney(p3 / 3) + ' /抽';
+  $('r-per5').textContent = '$' + toMoney(p5 / 5) + ' /抽';
+  $('r-target').textContent = toMoney(target);
+  $('r-profit').textContent = toMoney(target - cost);
+  $('result').style.display = 'block';
+
+  pendingPrize = { code, name: name || '未命名', cost, total, mult, r1, r3, r5, p1, p3, p5, createdAt: Date.now() };
+});
+
+$('btn-save').addEventListener('click', async () => {
+  if (!pendingPrize) { toast('請先計算定價', true); return; }
+  if (!pendingPrize.code) { toast('請輸入商品編號', true); $('p-code').focus(); return; }
+  if (!pendingPrize.name || pendingPrize.name === '未命名') {
+    toast('請輸入商品名稱', true); $('p-name').focus(); return;
+  }
+  const existing = prizes.findIndex(p => (p.code || '').toUpperCase() === pendingPrize.code.toUpperCase());
+  if (existing >= 0) {
+    pendingPrize.id = prizes[existing].id;
+    prizes[existing] = pendingPrize;
+    toast('已更新:' + pendingPrize.name);
+  } else {
+    pendingPrize.id = 'p_' + Date.now();
+    prizes.unshift(pendingPrize);
+    toast('已新增:' + pendingPrize.name);
+  }
+  await save(K_PRIZES, prizes);
+  pendingPrize = null;
+  clearPrizeForm();
+  renderPrizeList();
+});
+
+function clearPrizeForm() {
+  ['p-code','p-name','p-cost','p-total'].forEach(id => $(id).value = '');
+  $('p-mult').value = 3;
+  $('p-r1').value = 1.15;
+  $('p-r3').value = 1;
+  $('p-r5').value = 0.92;
+  $('result').style.display = 'none';
+}
+
+function renderPrizeList() {
+  const box = $('prize-list');
+  if (!prizes.length) { box.innerHTML = '<div class="empty">尚無商品</div>'; return; }
+  box.innerHTML = prizes.map(p => {
+    const used = getUsedDraws(p.id);
+    const remain = Math.max(0, p.total - used);
+    return `
+      <div class="record">
+        <div class="record-head">
+          <div>
+            <div class="record-name">${p.name}</div>
+            <div class="record-code">${p.code || '—'}</div>
+          </div>
+          <div class="record-date mono">剩 ${remain}/${p.total}</div>
+        </div>
+        <div class="record-stats">
+          <div class="record-stat"><span class="sk">成本</span><span class="sv">$${toMoney(p.cost)}</span></div>
+          <div class="record-stat"><span class="sk">1抽</span><span class="sv">$${toMoney(p.p1)}</span></div>
+          <div class="record-stat"><span class="sk">3抽</span><span class="sv">$${toMoney(p.p3)}</span></div>
+          <div class="record-stat"><span class="sk">5抽</span><span class="sv">$${toMoney(p.p5)}</span></div>
+        </div>
+        <div class="record-actions">
+          <button class="btn ghost small" data-edit="${p.id}">編 輯</button>
+          <button class="btn small" style="background:var(--red);border-color:var(--red);" data-del="${p.id}">刪 除</button>
+        </div>
+      </div>`;
+  }).join('');
+  box.querySelectorAll('[data-edit]').forEach(b => {
+    b.addEventListener('click', () => editPrize(b.dataset.edit));
+  });
+  box.querySelectorAll('[data-del]').forEach(b => {
+    b.addEventListener('click', () => deletePrize(b.dataset.del));
+  });
+}
+
+function editPrize(id) {
+  const p = prizes.find(x => x.id === id);
+  if (!p) return;
+  $('p-code').value = p.code || '';
+  $('p-name').value = p.name;
+  $('p-cost').value = p.cost;
+  $('p-total').value = p.total;
+  $('p-mult').value = p.mult;
+  $('p-r1').value = p.r1;
+  $('p-r3').value = p.r3;
+  $('p-r5').value = p.r5;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('已載入,修改後按計算定價→儲存');
+}
+
+async function deletePrize(id) {
+  if (!confirm('確定要刪除此商品?其結算紀錄不會被刪除。')) return;
+  prizes = prizes.filter(p => p.id !== id);
+  await save(K_PRIZES, prizes);
+  renderPrizeList();
+  toast('已刪除');
+}
+
+/* 老闆:報表 */
+function renderReport() {
+  const count = settles.length;
+  const draws = settles.reduce((a, s) => a + (s.draws || 0), 0);
+  const revenue = settles.reduce((a, s) => a + (s.finalCost || 0), 0);
+  const wins = settles.reduce((a, s) => a + (s.wins || 0), 0);
+  const totalCommission = settles.reduce((a, s) => a + (s.commission || 0), 0);
+
+  $('stat-count').textContent = count;
+  $('stat-draws').textContent = draws;
+  $('stat-revenue').textContent = toMoney(revenue);
+  $('stat-wins').textContent = wins;
+  $('stat-commission').textContent = toMoney(totalCommission);
+
+  const box = $('report-list');
+  if (!prizes.length) { box.innerHTML = '<div class="empty">尚無商品</div>'; return; }
+  box.innerHTML = prizes.map(p => {
+    const ps = settles.filter(s => s.prizeId === p.id);
+    const pDraws = ps.reduce((a,s) => a + s.draws, 0);
+    const pWins = ps.reduce((a,s) => a + s.wins, 0);
+    const pSmalls = ps.reduce((a,s) => a + s.smalls, 0);
+    const pRev = ps.reduce((a,s) => a + s.finalCost, 0);
+    const pComm = ps.reduce((a,s) => a + (s.commission || 0), 0);
+    const profit = pRev - p.cost - pComm;
+    return `
+      <div class="record">
+        <div class="record-head">
+          <div>
+            <div class="record-name">${p.name}</div>
+            <div class="record-code">${p.code || '—'} · 成本 $${toMoney(p.cost)}${pComm > 0 ? ' · 抽成 $' + toMoney(pComm) : ''}</div>
+          </div>
+          <div class="record-date mono" style="color:${profit >= 0 ? 'var(--green)':'var(--red)'};">
+            ${profit >= 0 ? '+' : ''}$${toMoney(profit)}
+          </div>
+        </div>
+        <div class="record-stats">
+          <div class="record-stat"><span class="sk">抽數</span><span class="sv">${pDraws}/${p.total}</span></div>
+          <div class="record-stat"><span class="sk">中獎</span><span class="sv">${pWins}</span></div>
+          <div class="record-stat"><span class="sk">小賞</span><span class="sv">${pSmalls}</span></div>
+          <div class="record-stat"><span class="sk">營收</span><span class="sv">$${toMoney(pRev)}</span></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* 員工:我的業績 */
+async function renderCommission() {
+  const rate = await load(K_COMMISSION, 5);
+  $('cm-rate').textContent = rate;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+  // 確保舊資料(沒有 commission 欄位)也能顯示(使用當前費率補算)
+  const calc = s => (typeof s.commission === 'number') ? s.commission : (s.draws * rate);
+
+  const todayList = settles.filter(s => s.timestamp >= todayStart);
+  const monthList = settles.filter(s => s.timestamp >= monthStart);
+
+  const todayComm = todayList.reduce((a, s) => a + calc(s), 0);
+  const todayDraws = todayList.reduce((a, s) => a + (s.draws || 0), 0);
+  const monthComm = monthList.reduce((a, s) => a + calc(s), 0);
+  const monthDraws = monthList.reduce((a, s) => a + (s.draws || 0), 0);
+  const totalComm = settles.reduce((a, s) => a + calc(s), 0);
+
+  $('cm-today').textContent = toMoney(todayComm);
+  $('cm-today-draws').textContent = todayDraws;
+  $('cm-month').textContent = toMoney(monthComm);
+  $('cm-month-draws').textContent = monthDraws;
+  $('cm-total').textContent = toMoney(totalComm);
+
+  // 每日明細
+  const box = $('cm-daily');
+  if (!settles.length) { box.innerHTML = '<div class="empty">尚無紀錄</div>'; return; }
+  const byDay = {};
+  settles.forEach(s => {
+    const d = new Date(s.timestamp);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (!byDay[key]) byDay[key] = { draws: 0, comm: 0, count: 0 };
+    byDay[key].draws += s.draws || 0;
+    byDay[key].comm += calc(s);
+    byDay[key].count += 1;
+  });
+  const sortedDays = Object.keys(byDay).sort().reverse().slice(0, 30);
+  box.innerHTML = sortedDays.map(day => {
+    const d = byDay[day];
+    const [y, m, dd] = day.split('-');
+    return `
+      <div class="record" style="padding:10px 12px;">
+        <div class="record-head" style="margin-bottom:0;">
+          <div>
+            <div class="record-name mono" style="font-size:13px;">${m}/${dd}</div>
+            <div class="record-code">${d.count} 筆結算 · ${d.draws} 抽</div>
+          </div>
+          <div class="record-date mono" style="color:var(--green);font-size:15px;font-weight:700;">
+            +$${toMoney(d.comm)}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* 老闆:設定 */
+async function loadConfig() {
+  const webhook = await load(K_WEBHOOK, '');
+  $('cfg-webhook').value = webhook;
+  const rate = await load(K_COMMISSION, 5);
+  $('cfg-commission').value = rate;
+}
+
+$('btn-save-commission').addEventListener('click', async () => {
+  const rate = parseFloat($('cfg-commission').value);
+  if (isNaN(rate) || rate < 0) { toast('請輸入有效金額', true); return; }
+  await save(K_COMMISSION, rate);
+  toast('抽成費率已儲存:$' + rate + '/抽');
+});
+
+$('btn-save-pin').addEventListener('click', async () => {
+  const pin = $('cfg-pin').value.trim();
+  if (!pin) { toast('密碼不可為空', true); return; }
+  if (pin.length < 4) { toast('密碼至少 4 位', true); return; }
+  await save(K_PIN, pin);
+  $('cfg-pin').value = '';
+  toast('密碼已更新');
+});
+
+$('btn-save-webhook').addEventListener('click', async () => {
+  const url = $('cfg-webhook').value.trim();
+  await save(K_WEBHOOK, url);
+  toast('設定已儲存');
+});
+
+$('btn-test-webhook').addEventListener('click', async () => {
+  const url = $('cfg-webhook').value.trim();
+  if (!url) { toast('請先填寫網址', true); return; }
+  $('webhook-status').innerHTML = '<span class="sync-status wait">⋯ 測試中</span>';
+  const ok = await syncToSheet({
+    timestamp: Date.now(),
+    prizeCode: 'TEST', prizeName: '連線測試',
+    draws: 0, wins: 0, smalls: 0,
+    plan: 'TEST', baseCost: 0, discount: 0, finalCost: 0
+  }, url);
+  $('webhook-status').innerHTML = ok
+    ? '<span class="sync-status ok">✓ 已送出測試(請檢查試算表是否收到)</span>'
+    : '<span class="sync-status fail">✗ 連線失敗</span>';
+});
+
+$('show-script').addEventListener('click', (e) => {
+  e.preventDefault();
+  $('script-text').value = APPS_SCRIPT_TEMPLATE;
+  $('script-modal').classList.add('show');
+});
+$('script-close').addEventListener('click', () => $('script-modal').classList.remove('show'));
+$('script-copy').addEventListener('click', () => {
+  $('script-text').select();
+  navigator.clipboard.writeText(APPS_SCRIPT_TEMPLATE).then(() => {
+    toast('程式碼已複製');
+  }).catch(() => {
+    toast('請手動選取複製', true);
+  });
+});
+
+$('btn-export').addEventListener('click', async () => {
+  const data = { exportedAt: new Date().toISOString(), prizes, settles };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ichiban-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('已匯出備份');
+});
+
+$('btn-import').addEventListener('click', () => $('import-file').click());
+$('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!confirm('匯入將覆蓋現有資料,確定繼續?')) return;
+    if (Array.isArray(data.prizes)) { prizes = data.prizes; await save(K_PRIZES, prizes); }
+    if (Array.isArray(data.settles)) { settles = data.settles; await save(K_SETTLES, settles); }
+    renderPrizeList();
+    toast('已匯入資料');
+  } catch (err) {
+    toast('檔案格式錯誤', true);
+  }
+  e.target.value = '';
+});
+
+(async () => {
+  prizes = await load(K_PRIZES, []);
+  settles = await load(K_SETTLES, []);
+})();
+</script>
+</body>
+</html>
